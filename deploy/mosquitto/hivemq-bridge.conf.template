@@ -1,0 +1,35 @@
+# /etc/mosquitto/conf.d/hivemq-bridge.conf  (tạo bởi setup_mosquitto.sh, chmod 640, chứa mật khẩu HiveMQ)
+# Cầu nối Mosquitto (trong nhà) <-> HiveMQ Cloud (Internet). Mất mạng: cầu tạm đứt, nhà vẫn chạy bình thường.
+connection hivemq
+address 749e4310b50e423c8876f553789253da.s1.eu.hivemq.cloud:8883
+bridge_protocol_version mqttv50
+remote_clientid raspi-mosquitto-bridge
+remote_username __HIVEMQ_USER__
+remote_password __HIVEMQ_PASSWORD__
+bridge_cafile /etc/ssl/certs/ca-certificates.crt
+try_private false
+start_type automatic
+restart_timeout 5 60
+keepalive_interval 30
+
+# Phiên SẠCH: lệnh gửi từ ngoài lúc Pi mất mạng KHÔNG được giữ lại để chạy trễ
+# (ví dụ lệnh mở cửa 1 tiếng trước không được tự chạy khi có mạng lại).
+cleansession true
+
+# Báo trạng thái cầu: "1" = Pi đang nối Internet, "0" = mất (retained, có LWT trên HiveMQ).
+# App ở ngoài nhà dùng topic này để biết Pi offline thay vì chờ vô ích.
+notifications true
+notification_topic smarthome/pi/cloud_link
+
+# ---- Pi -> Cloud: mọi dữ liệu, trạng thái, cảnh báo của ngôi nhà ----
+topic smarthome/# out 1
+topic home/# out 1
+
+# ---- Cloud -> Pi: CHỈ các lệnh từ app ở xa (danh sách giống quyền ghi của tài khoản app trong acl) ----
+topic smarthome/+/+/set in 1
+topic smarthome/+/state in 1
+topic smarthome/chatbot/request in 1
+topic smarthome/living_room/face/enroll/cmd in 1
+topic smarthome/living_room/face/members/cmd in 1
+topic home/livingroom/door/cmd in 1
+topic home/fire_gas/ack in 1

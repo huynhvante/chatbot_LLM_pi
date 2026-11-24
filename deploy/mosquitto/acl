@@ -1,0 +1,16 @@
+# /etc/mosquitto/acl  — phân quyền topic
+# pi : các script chạy trên Raspberry Pi -> toàn quyền
+user pi
+topic readwrite #
+
+# app : ứng dụng Android -> được ĐỌC mọi thứ, chỉ được GỬI các lệnh hợp lệ.
+# Cố ý KHÔNG cho ghi home/livingroom/door/face_unlock: chỉ face-door (nhận diện khuôn mặt) được mở cửa theo đường đó.
+user app
+topic read #
+topic write smarthome/+/+/set
+topic write smarthome/+/state
+topic write smarthome/chatbot/request
+topic write smarthome/living_room/face/enroll/cmd
+topic write smarthome/living_room/face/members/cmd
+topic write home/livingroom/door/cmd
+topic write home/fire_gas/ack

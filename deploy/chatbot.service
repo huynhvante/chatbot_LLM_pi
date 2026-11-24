@@ -1,0 +1,33 @@
+# /etc/systemd/system/chatbot.service
+# Đổi /home/hvt/code/chatbot cho đúng thư mục chứa chatbot_service.py + router.py trên Pi.
+# Cài:  sudo cp chatbot.service /etc/systemd/system/
+#       sudo systemctl daemon-reload && sudo systemctl enable --now chatbot
+# Xem log: journalctl -u chatbot -f
+[Unit]
+Description=Smart Home chatbot (router + Ollama qwen2.5:1.5b) qua MQTT
+After=network-online.target ollama.service mosquitto.service
+Wants=network-online.target ollama.service
+
+[Service]
+Type=simple
+User=hvt
+WorkingDirectory=/home/hvt/code/chatbot
+# File chứa MQTT_PASSWORD. Dấu "-" = thiếu file thì bỏ qua, không làm service lỗi "resources".
+# Tạo:  echo "MQTT_PASSWORD=matkhau" | sudo tee /etc/chatbot.env && sudo chmod 600 /etc/chatbot.env
+EnvironmentFile=-/etc/face-door.env
+EnvironmentFile=-/etc/chatbot.env
+# Broker MQTT trong nhà (Mosquitto trên Pi). Phải đứng SAU để ghi đè MQTT_PASSWORD của HiveMQ ở trên.
+# Không có file này -> dùng HiveMQ Cloud như cũ.
+EnvironmentFile=-/etc/smarthome-mqtt.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 chatbot_service.py --serve --warmup \
+    --client-id raspi-chatbot --num-thread 2 --num-ctx 1024 --num-predict 80 \
+    --max-cpu 85 --max-temp 78 --llm-timeout 40
+Restart=always
+RestartSec=5
+# Bản thân script rất nhẹ (chỉ chờ MQTT); phần nặng nằm trong ollama.service
+Nice=5
+CPUAffinity=2 3
+
+[Install]
+WantedBy=multi-user.target
